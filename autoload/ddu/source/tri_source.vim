@@ -1,0 +1,13 @@
+function! ddu#source#tri_source#getbufinfo() abort
+  return {
+  \  'currentDir': getcwd(),
+  \  'alternateBufNr': bufnr('#'),
+  \  'buffers': map(getbufinfo(), {_, buf -> {
+  \    'bufnr': buf['bufnr'],
+  \    'changed': buf['changed'],
+  \    'lastused': buf['lastused'],
+  \    'listed': buf['listed'],
+  \    'name': buf['name'],
+  \  }}),
+  \}
+endfunction

@@ -1,0 +1,240 @@
+*tri_source.txt*	Combined three sources for ddu.vim
+
+License: MIT license
+
+CONTENTS				*ddu-source-tri_source-contents*
+
+Introduction		|ddu-source-tri_source-introduction|
+Install			|ddu-source-tri_source-install|
+Examples		|ddu-source-tri_source-examples|
+Params			|ddu-source-tri_source-params|
+Highlights		|ddu-source-tri_source-highlights|
+FAQ			|ddu-source-tri_source-faq|
+
+
+==============================================================================
+INTRODUCTION				*ddu-source-tri_source-introduction*
+
+This source combines three file sources into a single ddu.vim source:
+
+1. Buffer list    - Currently open listed buffers
+2. MRU list       - Most recently used files (via |mr.vim|)
+3. File recursive - Files under the current directory (recursive)
+
+Items are gathered in this order, and duplicates are removed by default
+so that each file appears only once.  The first source to provide a file
+wins (buffer > MRU > file_rec).
+
+Each item can be visually distinguished by a prefix tag:
+  `[buf]`  - buffer list item
+  `[mru]`  - MRU list item (changes with |ddu-source-tri_source-param-mrKind|:
+             `[mrw]`, `[mrr]`, `[mrd]`)
+  `[rec]`  - recursive file item
+
+This source uses the "file" kind from |ddu-kind-file|.
+
+
+==============================================================================
+INSTALL					*ddu-source-tri_source-install*
+
+Please install the following plugins:
+
+- ddu.vim          https://github.com/Shougo/ddu.vim
+- denops.vim       https://github.com/vim-denops/denops.vim
+- ddu-kind-file    https://github.com/Shougo/ddu-kind-file
+
+The following plugin is optional but required when |ddu-source-tri_source-param-enableMr|
+is true (default):
+
+- mr.vim           https://github.com/lambdalisue/vim-mr
+
+
+==============================================================================
+EXAMPLES				*ddu-source-tri_source-examples*
+
+Basic usage:
+>
+	call ddu#start(#{ sources: [#{ name: 'tri_source' }] })
+<
+Disable MRU source (if mr.vim is not installed):
+>
+	call ddu#start(#{
+	      \   sources: [#{
+	      \     name: 'tri_source',
+	      \     params: #{ enableMr: v:false },
+	      \   }],
+	      \ })
+<
+Change base path:
+>
+	call ddu#custom#patch_global('sourceOptions', #{
+	      \   tri_source: #{ path: expand("~") },
+	      \ })
+<
+Hide source prefix tags:
+>
+	call ddu#start(#{
+	      \   sources: [#{
+	      \     name: 'tri_source',
+	      \     params: #{ showSourcePrefix: v:false },
+	      \   }],
+	      \ })
+<
+
+==============================================================================
+PARAMS					*ddu-source-tri_source-params*
+
+				*ddu-source-tri_source-param-enableBuffer*
+enableBuffer	(boolean)
+		Enable the buffer list source.
+
+		Default: v:true
+
+				*ddu-source-tri_source-param-enableMr*
+enableMr	(boolean)
+		Enable the MRU source.  Requires |mr.vim|.
+		If |mr.vim| is not installed and this is true, the MRU
+		source will silently fail and the other sources will
+		still work.
+
+		Default: v:true
+
+				*ddu-source-tri_source-param-enableFileRec*
+enableFileRec	(boolean)
+		Enable the recursive file list source.
+
+		Default: v:true
+
+				*ddu-source-tri_source-param-ignoredDirectories*
+ignoredDirectories	(string[])
+		List of directory names to ignore during recursive file
+		traversal.
+		Note: Must be directory names, not paths.
+
+		Default: [".git"]
+
+				*ddu-source-tri_source-param-chunkSize*
+chunkSize	(number)
+		Number of files to collect before enqueuing a chunk
+		during recursive file traversal.
+
+		Default: 1000
+
+				*ddu-source-tri_source-param-expandSymbolicLink*
+expandSymbolicLink	(boolean)
+		When true, follow symbolic links during recursive file
+		traversal.
+
+		Default: v:false
+
+				*ddu-source-tri_source-param-mrKind*
+mrKind		(string)
+		The kind parameter passed to |mr.vim|.
+		This value is also used as the prefix tag for MRU items.
+		For example, when set to "mrw", items are displayed as
+		`[mrw] path/to/file`.
+
+		Default: "mru"
+		Available: "mru", "mrw", "mrr", "mrd"
+
+				*ddu-source-tri_source-param-bufferOrderby*
+bufferOrderby	(string)
+		Sort order for the buffer list.
+		"desc" sorts by most recently used first (excluding the
+		current buffer, which is placed last).
+		"asc" sorts by least recently used first.
+
+		Default: "desc"
+
+				*ddu-source-tri_source-param-dedup*
+dedup		(boolean)
+		When true, remove duplicate files across the three
+		sources.  The first source to provide a file wins
+		(buffer > MRU > file_rec).
+
+		Default: v:true
+
+				*ddu-source-tri_source-param-showSourcePrefix*
+showSourcePrefix	(boolean)
+		When true, prepend a tag such as `[buf]`, `[mru]`
+		(or `[mrw]`, `[mrr]`, `[mrd]` depending on
+		|ddu-source-tri_source-param-mrKind|), or `[rec]` to
+		each item's display text.  The tag is also
+		highlighted using the corresponding highlight group
+		(see |ddu-source-tri_source-highlights|).
+
+		The `word` property (used for filtering/matching) is not
+		affected by this setting.
+
+		Default: v:true
+
+
+==============================================================================
+HIGHLIGHTS				*ddu-source-tri_source-highlights*
+
+The following highlight groups are defined with `highlight default` in
+|onInit()|.  You can override them in your configuration.
+
+					*DduTriSource_buf*
+DduTriSource_buf
+		Highlight for the `[buf]` prefix tag.
+		Default: ctermfg=Green guifg=#98c379
+
+					*DduTriSource_mru*
+					*DduTriSource_mrw*
+					*DduTriSource_mrr*
+					*DduTriSource_mrd*
+DduTriSource_mru
+DduTriSource_mrw
+DduTriSource_mrr
+DduTriSource_mrd
+		Highlight for the MRU prefix tag.
+		The active group depends on |ddu-source-tri_source-param-mrKind|.
+		All four groups share the same default color.
+		Default: ctermfg=Yellow guifg=#e5c07b
+
+					*DduTriSource_rec*
+DduTriSource_rec
+		Highlight for the `[rec]` prefix tag.
+		Default: ctermfg=Blue guifg=#61afef
+
+Example override:
+>
+	highlight DduTriSource_buf ctermfg=Cyan guifg=#56b6c2
+	highlight DduTriSource_mru ctermfg=Magenta guifg=#c678dd
+	highlight DduTriSource_rec ctermfg=White guifg=#abb2bf
+<
+
+==============================================================================
+FAQ					*ddu-source-tri_source-faq*
+
+Q: I do not use mr.vim.  Can I still use this source?
+
+A: Yes.  Set |ddu-source-tri_source-param-enableMr| to v:false.
+   The buffer list and file_rec sources will work independently.
+
+Q: ".gitignore" is not respected by the file_rec source.
+
+A: This is by design.  The recursive file walk uses Deno's file system
+   API directly and does not parse ".gitignore".  If you need gitignore
+   support, consider using "ddu-source-file_external" for the file
+   listing part and this source with |ddu-source-tri_source-param-enableFileRec|
+   set to v:false.
+
+Q: How is deduplication performed?
+
+A: Files are compared by their absolute path.  When
+   |ddu-source-tri_source-param-dedup| is true, items are gathered in
+   order (buffer -> MRU -> file_rec), and if a path has already been
+   seen from an earlier source, it is skipped.
+
+Q: Prefix tags are not colored.
+
+A: Make sure |ddu-source-tri_source-param-showSourcePrefix| is true
+   (default).  The highlight groups are registered on |onInit()|.
+   If your colorscheme overrides all highlights after plugin loading,
+   add explicit `highlight` commands after the colorscheme is set.
+
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:noet:fen:noet:
